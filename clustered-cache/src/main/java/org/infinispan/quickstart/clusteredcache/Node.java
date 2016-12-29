@@ -23,17 +23,20 @@
 package org.infinispan.quickstart.clusteredcache;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Map;
+import java.util.BitSet;
+import org.infinispan.AdvancedCache;
 import org.infinispan.Cache;
+import org.infinispan.CacheStream;
 import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
+import org.infinispan.container.entries.CacheEntry;
+import org.infinispan.context.Flag;
+import org.infinispan.distribution.ch.ConsistentHash;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.quickstart.clusteredcache.util.LoggingListener;
+import org.infinispan.remoting.transport.Address;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 
@@ -88,16 +91,17 @@ public class Node {
         Thread putThread = new Thread() {
             @Override
             public void run() {
+                Address address = cache.getAdvancedCache().getRpcManager().getAddress();
                 int counter = 0;
                 while (!stop) {
                     try {
-                        cache.put("key-" + counter, "" + cache.getAdvancedCache().getRpcManager().getAddress() + "-" + counter);
+                        cache.put(String.format("key-%d", counter), String.format("key-%s-%d", address, counter));
                     } catch (Exception e) {
                         log.warnf("Error inserting key into the cache", e);
                     }
                     counter++;
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(3000L);
                     } catch (InterruptedException e) {
                         break;
                     }
@@ -120,17 +124,54 @@ public class Node {
      */
     private void printCacheContents(Cache<String, String> cache) {
         System.out.printf("Cache contents on node %s\n", cache.getAdvancedCache().getRpcManager().getAddress());
-        ArrayList<Map.Entry<String, String>> entries = new ArrayList<>(cache.entrySet());
-        Collections.sort(entries, new Comparator<Map.Entry<String, String>>() {
-            @Override
-            public int compare(Map.Entry<String, String> o1, Map.Entry<String, String> o2) {
-                return o1.getKey().compareTo(o2.getKey());
-            }
-        });
-        for (Map.Entry<String, String> e : entries) {
-            System.out.printf("\t%s = %s\n", e.getKey(), e.getValue());
-        }
-        System.out.println();
+//        ArrayList<Map.Entry<String, String>> entries = new ArrayList<>(cache.entrySet());
+//        Collections.sort(entries, new Comparator<Map.Entry<String, String>>() {
+//            @Override
+//            public int compare(Map.Entry<String, String> o1, Map.Entry<String, String> o2) {
+//                return o1.getKey().compareTo(o2.getKey());
+//            }
+//        });
+//        for (Map.Entry<String, String> e : entries) {
+//            System.out.printf("\t%s = %s\n", e.getKey(), e.getValue());
+//        }
+//        System.out.println();
+//        AdvancedCache<String, String> advancedCache = cache.getAdvancedCache();
+//        ConsistentHash ch = advancedCache.getDistributionManager().getReadConsistentHash();
+//        Address localhost = advancedCache.getRpcManager().getAddress();
+//        BitSet primarySegments = new BitSet(ch.getNumSegments());
+//        ch.getPrimarySegmentsForOwner(localhost).stream()
+//                //.peek(x -> {
+//                //    System.out.printf("\t address=%s primarySegments=%d\n", localhost, x);
+//                //})
+//                .forEach(primarySegments::set);
+//
+//        advancedCache.withFlags(Flag.CACHE_MODE_LOCAL).cacheEntrySet().stream()
+//                //.peek(x -> {
+//                //    System.out.printf("\t %s -> %s\n", x.getKey(), primarySegments.get(ch.getSegment(x.getKey())));
+//                //})
+//                .filter(x -> primarySegments.get(ch.getSegment(x.getKey())))
+//                .forEach(x -> System.out.printf("\t%s = %s\n", x.getKey(), x.getValue()));
+        this.streamOfLocalPrimarySegmentsEntries(cache)
+                .forEach(x -> System.out.printf("\t%s = %s\n", x.getKey(), x.getValue()));
+    }
+
+    private <K, V> CacheStream<CacheEntry<K, V>> streamOfLocalPrimarySegmentsEntries(Cache<K, V> cache) {
+        //AdvancedCache<String, String> advancedCache = cache.getAdvancedCache();
+        AdvancedCache<K, V> advancedCache = cache.getAdvancedCache();
+        ConsistentHash ch = advancedCache.getDistributionManager().getReadConsistentHash();
+        Address localhost = advancedCache.getRpcManager().getAddress();
+        BitSet primarySegments = new BitSet(ch.getNumSegments());
+        ch.getPrimarySegmentsForOwner(localhost).stream()
+                //.peek(x -> {
+                //    System.out.printf("\t address=%s primarySegments=%d\n", localhost, x);
+                //})
+                .forEach(primarySegments::set);
+        return advancedCache.withFlags(Flag.CACHE_MODE_LOCAL).cacheEntrySet().stream()
+                //.peek(x -> {
+                //    System.out.printf("\t %s -> %s\n", x.getKey(), primarySegments.get(ch.getSegment(x.getKey())));
+                //})
+                .filter(x -> primarySegments.get(ch.getSegment(x.getKey())));
+        //.forEach(x -> System.out.printf("\t%s = %s\n", x.getKey(), x.getValue()));
     }
 
     private EmbeddedCacheManager createCacheManager() throws IOException {
