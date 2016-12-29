@@ -30,9 +30,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <p>The greeting cache qualifier.</p>
+ * <p>
+ * The greeting cache qualifier.</p>
  *
- * <p>This qualifier will be associated to the greeting cache in the {@link Config} class.</p>
+ * <p>
+ * This qualifier will be associated to the greeting cache in the {@link Config} class.</p>
  *
  * @author Kevin Pollet <pollet.kevin@gmail.com> (C) 2011
  */

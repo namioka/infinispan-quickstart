@@ -22,6 +22,7 @@
  */
 package org.infinispan.quickstart.cdi.test.util;
 
+import java.io.File;
 import org.infinispan.quickstart.cdi.GreetingService;
 import org.infinispan.quickstart.cdi.config.Config;
 import org.jboss.shrinkwrap.api.GenericArchive;
@@ -30,28 +31,26 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.resolver.api.DependencyResolvers;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenDependencyResolver;
 
-import java.io.File;
-
 /**
  * @author Kevin Pollet <pollet.kevin@gmail.com> (C) 2011
  */
 public final class Deployments {
+    // Disable instantiation
 
-   // Disable instantiation
-   private Deployments() {
-   }
+    private Deployments() {
+    }
 
-   public static WebArchive baseDeployment() {
-      return ShrinkWrap.create(WebArchive.class)
-            .addPackage(Config.class.getPackage())
-            .addPackage(GreetingService.class.getPackage())
-            .addAsWebInfResource(new File("src/main/webapp/WEB-INF/beans.xml"), "beans.xml")
-            .addAsLibraries(
-                  DependencyResolvers.use(MavenDependencyResolver.class)
-                        .loadReposFromPom("pom.xml")
-                        .artifact("javax.cache:cache-api")
-                        .artifact("org.infinispan:infinispan-cdi")
-                        .resolveAs(GenericArchive.class)
-            );
-   }
+    public static WebArchive baseDeployment() {
+        return ShrinkWrap.create(WebArchive.class)
+                .addPackage(Config.class.getPackage())
+                .addPackage(GreetingService.class.getPackage())
+                .addAsWebInfResource(new File("src/main/webapp/WEB-INF/beans.xml"), "beans.xml")
+                .addAsLibraries(
+                        DependencyResolvers.use(MavenDependencyResolver.class)
+                                .loadReposFromPom("pom.xml")
+                                .artifact("javax.cache:cache-api")
+                                .artifact("org.infinispan:infinispan-cdi")
+                                .resolveAs(GenericArchive.class)
+                );
+    }
 }

@@ -22,21 +22,20 @@
  */
 package org.infinispan.quickstart.embeddedcache;
 
+import static org.infinispan.eviction.EvictionStrategy.*;
+
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 
-import static org.infinispan.eviction.EvictionStrategy.LIRS;
-
 public class CustomCacheQuickstart {
 
-   public static void main(String args[]) throws Exception {
-      EmbeddedCacheManager manager = new DefaultCacheManager();
-      manager.defineConfiguration("custom-cache", new ConfigurationBuilder()
-            .eviction().strategy(LIRS).maxEntries(10)
-            .build());
-      Cache<Object, Object> c = manager.getCache("custom-cache");
-   }
-
+    public static void main(String args[]) throws Exception {
+        EmbeddedCacheManager manager = new DefaultCacheManager();
+        manager.defineConfiguration("custom-cache", new ConfigurationBuilder()
+                .eviction().strategy(LIRS).maxEntries(10)
+                .build());
+        Cache<Object, Object> c = manager.getCache("custom-cache");
+    }
 }

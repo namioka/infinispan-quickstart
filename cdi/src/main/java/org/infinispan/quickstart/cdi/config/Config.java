@@ -22,12 +22,11 @@
  */
 package org.infinispan.quickstart.cdi.config;
 
+import javax.enterprise.inject.Produces;
 import org.infinispan.cdi.ConfigureCache;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.eviction.EvictionStrategy;
-
-import javax.enterprise.inject.Produces;
 
 /**
  * This is the configuration class.
@@ -37,37 +36,40 @@ import javax.enterprise.inject.Produces;
  */
 public class Config {
 
-   /**
-    * <p>This producer defines the greeting cache configuration.</p>
-    *
-    * <p>This cache will have:
-    * <ul>
-    *    <li>a maximum of 4 entries</li>
-    *    <li>use the strategy LRU for eviction</li>
-    * </ul>
-    * </p>
-    *
-    * @return the greeting cache configuration.
-    */
-   @GreetingCache
-   @ConfigureCache("greeting-cache")
-   @Produces
-   public Configuration greetingCache() {
-      return new ConfigurationBuilder()
-            .eviction().strategy(EvictionStrategy.LRU).maxEntries(4)
-            .build();
-   }
+    /**
+     * <p>
+     * This producer defines the greeting cache configuration.</p>
+     *
+     * <p>
+     * This cache will have:
+     * <ul>
+     * <li>a maximum of 4 entries</li>
+     * <li>use the strategy LRU for eviction</li>
+     * </ul>
+     * </p>
+     *
+     * @return the greeting cache configuration.
+     */
+    @GreetingCache
+    @ConfigureCache("greeting-cache")
+    @Produces
+    public Configuration greetingCache() {
+        return new ConfigurationBuilder()
+                .eviction().strategy(EvictionStrategy.LRU).maxEntries(4)
+                .build();
+    }
 
-   /**
-    * <p>This producer overrides the default cache configuration used by the default cache manager.</p>
-    *
-    * <p>The default cache configuration defines that a cache entry will have a lifespan of 60000 ms.</p>
-    */
-   @Produces
-   public Configuration defaultCacheConfiguration() {
-      return new ConfigurationBuilder()
-            .expiration().lifespan(60000l)
-            .build();
-   }
-
+    /**
+     * <p>
+     * This producer overrides the default cache configuration used by the default cache manager.</p>
+     *
+     * <p>
+     * The default cache configuration defines that a cache entry will have a lifespan of 60000 ms.</p>
+     */
+    @Produces
+    public Configuration defaultCacheConfiguration() {
+        return new ConfigurationBuilder()
+                .expiration().lifespan(60000l)
+                .build();
+    }
 }

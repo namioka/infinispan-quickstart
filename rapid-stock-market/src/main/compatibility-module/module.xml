@@ -1,7 +1,5 @@
 <module xmlns="urn:jboss:module:1.1" name="org.infinispan.quickstart.compatibility.common">
-
-   <resources>
-      <resource-root path="rapid-stock-market-quickstart-common.jar"/>
-   </resources>
-
+    <resources>
+        <resource-root path="rapid-stock-market-quickstart-common.jar"/>
+    </resources>
 </module>

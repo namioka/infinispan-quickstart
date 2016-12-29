@@ -27,50 +27,49 @@ import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
 
 public class JCacheQuickstart {
-	
-	public static void main(String args[]) throws Exception {
-		final String key = "key";
-		final String value = "value";
-		
-		Cache<String, String> cache = getJCacheInstance("my-cache");
 
-		System.out.println("Value to store in the cache:" + value);
-		cache.put(key, value); // Add a entry
-		
-		final String newValue = "newValue";
-		final String storedValue = cache.getAndPut(key,newValue); // get old and update to new
-		if ( ! value.equals(storedValue) )
-			throw new IllegalStateException("Stored value does not match provided value !");
-		final String newStoredValue = cache.get(key);
-		if ( ! newValue.equals(newStoredValue) )
-			throw new IllegalStateException("Stored value " + newStoredValue + " does not match expectation:" + newValue);
-		
-		if ( ! cache.containsKey(key) )// Validate the entry is now in the cache
-			throw new IllegalStateException("Failed to add value[" + value + "] associated to key:[" + key +"].");
+    public static void main(String args[]) throws Exception {
+        final String key = "key";
+        final String value = "value";
+        Cache<String, String> cache = getJCacheInstance("my-cache");
+        System.out.println("Value to store in the cache:" + value);
+        cache.put(key, value); // Add a entry
+        final String newValue = "newValue";
+        final String storedValue = cache.getAndPut(key, newValue); // get old and update to new
+        if (!value.equals(storedValue)) {
+            throw new IllegalStateException("Stored value does not match provided value !");
+        }
+        final String newStoredValue = cache.get(key);
+        if (!newValue.equals(newStoredValue)) {
+            throw new IllegalStateException("Stored value " + newStoredValue + " does not match expectation:" + newValue);
+        }
+        if (!cache.containsKey(key))// Validate the entry is now in the cache
+        {
+            throw new IllegalStateException("Failed to add value[" + value + "] associated to key:[" + key + "].");
+        }
+        if (cache.putIfAbsent(key, value)) {
+            throw new IllegalStateException("Key/value was already added, it should not be absent!");
+        }
+        if (!cache.replace(key, newStoredValue)) {
+            throw new IllegalStateException("Key " + key + " should be present - but entry was NOT updated !");
+        }
+        System.out.println("Value retrieved from cache:" + cache.get(key));
+        if (!cache.remove(key)) // Remove the entry from the cache
+        {
+            throw new IllegalStateException("Failed to remove value[" + value + "] associated to key:[" + key + "].");
+        }
+        cache.clear();
+        shutdownCache(cache);
+    }
 
-		
-		if ( cache.putIfAbsent(key, value) )
-			throw new IllegalStateException("Key/value was already added, it should not be absent!");
+    public static <K, V> Cache<K, V> getJCacheInstance(final String cacheName) {
+        return Caching.getCachingProvider().getCacheManager().createCache(cacheName, new MutableConfiguration<K, V>());
+    }
 
-		if ( ! cache.replace(key, newStoredValue) )
-			throw new IllegalStateException("Key " + key + " should be present - but entry was NOT updated !");
-		
-		
-		System.out.println("Value retrieved from cache:" + cache.get(key));
-		if ( ! cache.remove(key) ) 		// Remove the entry from the cache
-			throw new IllegalStateException("Failed to remove value[" + value + "] associated to key:[" + key +"].");
-		
-		cache.clear();
-		shutdownCache(cache);
-	}
-	
-	public static <K,V> Cache<K,V> getJCacheInstance(final String cacheName) {
-		return Caching.getCachingProvider().getCacheManager().createCache(cacheName, new MutableConfiguration <K,V>());		
-	}
-	
-	public static <K,V> void shutdownCache(Cache<K,V> cache) {
-		cache.close();
-		if ( ! cache.isClosed() ) 
-			throw new IllegalStateException("Cache is not properly closed !");
-	}
+    public static <K, V> void shutdownCache(Cache<K, V> cache) {
+        cache.close();
+        if (!cache.isClosed()) {
+            throw new IllegalStateException("Cache is not properly closed !");
+        }
+    }
 }

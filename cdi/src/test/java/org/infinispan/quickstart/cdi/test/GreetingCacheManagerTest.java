@@ -22,6 +22,9 @@
  */
 package org.infinispan.quickstart.cdi.test;
 
+import static org.junit.Assert.*;
+
+import javax.inject.Inject;
 import org.infinispan.eviction.EvictionStrategy;
 import org.infinispan.quickstart.cdi.GreetingCacheManager;
 import org.infinispan.quickstart.cdi.GreetingService;
@@ -32,57 +35,45 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.inject.Inject;
-
-import static org.junit.Assert.assertEquals;
-
 /**
  * @author Kevin Pollet <pollet.kevin@gmail.com> (C) 2011
  */
 @RunWith(Arquillian.class)
 public class GreetingCacheManagerTest {
 
-   @Deployment
-   public static WebArchive deployment() {
-      return Deployments.baseDeployment()
-            .addClass(GreetingCacheManagerTest.class);
-   }
+    @Deployment
+    public static WebArchive deployment() {
+        return Deployments.baseDeployment()
+                .addClass(GreetingCacheManagerTest.class);
+    }
+    @Inject
+    private GreetingService greetingService;
+    @Inject
+    private GreetingCacheManager greetingCacheManager;
 
-   @Inject
-   private GreetingService greetingService;
+    @Test
+    public void testGreetingCacheConfiguration() {
+        // Cache name
+        assertEquals("greeting-cache", greetingCacheManager.getCacheName());
+        // Eviction
+        assertEquals(4, greetingCacheManager.getEvictionMaxEntries());
+        assertEquals(EvictionStrategy.FIFO, greetingCacheManager.getEvictionStrategy());
+        // Lifespan
+        assertEquals(60000l, greetingCacheManager.getExpirationLifespan());
+    }
 
-   @Inject
-   private GreetingCacheManager greetingCacheManager;
+    @Test
+    public void testGreetingCacheCachedValues() {
+        greetingService.greet("Pete");
+        assertEquals(1, greetingCacheManager.getCachedValues().length);
+        assertEquals("Hello Pete :)", greetingCacheManager.getCachedValues()[0]);
+    }
 
-   @Test
-   public void testGreetingCacheConfiguration() {
-      // Cache name
-      assertEquals("greeting-cache", greetingCacheManager.getCacheName());
-
-      // Eviction
-      assertEquals(4, greetingCacheManager.getEvictionMaxEntries());
-      assertEquals(EvictionStrategy.FIFO, greetingCacheManager.getEvictionStrategy());
-
-      // Lifespan
-      assertEquals(60000l, greetingCacheManager.getExpirationLifespan());
-   }
-
-   @Test
-   public void testGreetingCacheCachedValues() {
-      greetingService.greet("Pete");
-
-      assertEquals(1, greetingCacheManager.getCachedValues().length);
-      assertEquals("Hello Pete :)", greetingCacheManager.getCachedValues()[0]);
-   }
-
-   @Test
-   public void testClearGreetingCache() {
-      greetingService.greet("Pete");
-
-      assertEquals(1, greetingCacheManager.getNumberOfEntries());
-
-      greetingCacheManager.clearCache();
-
-      assertEquals(0, greetingCacheManager.getNumberOfEntries());
-   }
+    @Test
+    public void testClearGreetingCache() {
+        greetingService.greet("Pete");
+        assertEquals(1, greetingCacheManager.getNumberOfEntries());
+        greetingCacheManager.clearCache();
+        assertEquals(0, greetingCacheManager.getNumberOfEntries());
+    }
 }

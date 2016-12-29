@@ -22,14 +22,12 @@
  */
 package org.infinispan.quickstart.cdi;
 
+import static org.infinispan.Version.*;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
-
-import static org.infinispan.Version.VERSION;
-
 
 /**
  * @author Kevin Pollet <pollet.kevin@gmail.com> (C) 2011
@@ -38,33 +36,33 @@ import static org.infinispan.Version.VERSION;
 @RequestScoped
 public class GreetingController {
 
-   @Inject
-   private GreetingService service;
-   private String name;
-   private String result;
+    @Inject
+    private GreetingService service;
+    private String name;
+    private String result;
 
-   @PostConstruct
-   private void init() {
-      name = "Enter your name";
-   }
+    @PostConstruct
+    private void init() {
+        name = "Enter your name";
+    }
 
-   public void greet() {
-      result = service.greet(name);
-   }
+    public void greet() {
+        result = service.greet(name);
+    }
 
-   public String getName() {
-      return name;
-   }
+    public String getName() {
+        return name;
+    }
 
-   public void setName(String name) {
-      this.name = name;
-   }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-   public String getResult() {
-      return result;
-   }
+    public String getResult() {
+        return result;
+    }
 
-   public String getInfinispanVersion() {
-      return VERSION;
-   }
+    public String getInfinispanVersion() {
+        return VERSION;
+    }
 }
