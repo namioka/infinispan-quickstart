@@ -42,7 +42,7 @@
         <!-- [WARNING] Using platform encoding (UTF-8 actually) to copy filtered
         resources, i.e. build is platform dependent! -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <infinispan.version>7.1.0.Final</infinispan.version>
+        <infinispan.version>8.3.0.Final-redhat-1</infinispan.version>
     </properties>
     <dependencies>
         <dependency>
@@ -53,7 +53,7 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.16</version>
+            <version>1.2.17.redhat-1</version>
         </dependency>
     </dependencies>
     <build>
@@ -64,14 +64,14 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.2.1</version>
+                <version>1.5.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -79,9 +79,31 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <mainClass>org.infinispan.quickstart.clusteredcache.Node</mainClass>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>java.net.preferIPv4Stack</key>
+                            <value>true</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>jgroups.bind_addr</key>
+                            <value>127.0.0.1</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>jgroups.join_timeout</key>
+                            <value>500</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>jgroups.udp.ip_ttl</key>
+                            <value>0</value>
+                        </systemProperty>
+                    </systemProperties>
+                </configuration>
             </plugin>
         </plugins>
     </build>
+    <!--
     <profiles>
         <profile>
             <id>jboss-public-repository</id>
@@ -123,4 +145,21 @@
             </pluginRepositories>
         </profile>
     </profiles>
+    -->
+    <repositories>
+        <repository>
+            <id>JBoss-Enterprise-Maven-Repository</id>
+            <name>repository</name>
+            <url>https://maven.repository.redhat.com/ga</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+                <updatePolicy>never</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>
