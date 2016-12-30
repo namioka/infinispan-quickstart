@@ -40,7 +40,6 @@ import org.infinispan.quickstart.clusteredcache.util.LoggingListener;
 import org.infinispan.remoting.transport.Address;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
-import org.jgroups.util.UUID;
 
 @ApplicationScoped
 public class Node {
@@ -192,7 +191,7 @@ public class Node {
         System.out.println("Starting a cache manager with a programmatic configuration");
         DefaultCacheManager cacheManager = new DefaultCacheManager(
                 GlobalConfigurationBuilder.defaultClusteredBuilder()
-                        .transport().nodeName(UUID.randomUUID().toString()).addProperty("configurationFile", "jgroups.xml")
+                        .transport()/*.nodeName(UUID.randomUUID().toString())*/.addProperty("configurationFile", "jgroups.xml")
                         .build(),
                 //new ConfigurationBuilder()
                 //        .clustering()
