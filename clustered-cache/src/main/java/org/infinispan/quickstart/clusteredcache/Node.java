@@ -120,7 +120,7 @@ public class Node {
         stop = true;
         putThread.join();
         cacheManager.stop();
-        System.exit(0);
+        //System.exit(0);
     }
 
     /**
