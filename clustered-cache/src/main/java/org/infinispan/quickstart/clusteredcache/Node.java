@@ -24,6 +24,7 @@ package org.infinispan.quickstart.clusteredcache;
 
 import java.io.IOException;
 import java.util.BitSet;
+import javax.enterprise.context.ApplicationScoped;
 import org.infinispan.AdvancedCache;
 import org.infinispan.Cache;
 import org.infinispan.CacheStream;
@@ -39,51 +40,55 @@ import org.infinispan.quickstart.clusteredcache.util.LoggingListener;
 import org.infinispan.remoting.transport.Address;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
+import org.jgroups.util.UUID;
 
+@ApplicationScoped
 public class Node {
 
     private static final BasicLogger log = Logger.getLogger(Node.class);
-    private final boolean useXmlConfig;
-    private final String cacheName;
-    private final String nodeName;
+//    private final boolean useXmlConfig;
+//    private final String cacheName;
+//    private final String nodeName;
     private volatile boolean stop = false;
 
-    public Node(boolean useXmlConfig, String cacheName, String nodeName) {
-        this.useXmlConfig = useXmlConfig;
-        this.cacheName = cacheName;
-        this.nodeName = nodeName;
-    }
+    private static final String CACHE_NAME = "dist";
 
-    public static void main(String[] args) throws Exception {
-        boolean useXmlConfig = false;
-        String cache = "repl";
-        String nodeName = null;
-        for (String arg : args) {
-            switch (arg) {
-                case "-x":
-                    useXmlConfig = true;
-                    break;
-                case "-p":
-                    useXmlConfig = false;
-                    break;
-                case "-d":
-                    cache = "dist";
-                    break;
-                case "-r":
-                    cache = "repl";
-                    break;
-                default:
-                    nodeName = arg;
-                    break;
-            }
-        }
-        new Node(useXmlConfig, cache, nodeName).run();
-    }
-
+//    public Node(boolean useXmlConfig, String cacheName, String nodeName) {
+//        this.useXmlConfig = useXmlConfig;
+//        this.cacheName = cacheName;
+//        this.nodeName = nodeName;
+//    }
+//
+//    public static void main(String[] args) throws Exception {
+//        boolean useXmlConfig = false;
+//        String cache = "repl";
+//        String nodeName = null;
+//        for (String arg : args) {
+//            switch (arg) {
+//                case "-x":
+//                    useXmlConfig = true;
+//                    break;
+//                case "-p":
+//                    useXmlConfig = false;
+//                    break;
+//                case "-d":
+//                    cache = "dist";
+//                    break;
+//                case "-r":
+//                    cache = "repl";
+//                    break;
+//                default:
+//                    nodeName = arg;
+//                    break;
+//            }
+//        }
+//        new Node(useXmlConfig, cache, nodeName).run();
+//    }
+//
     public void run() throws IOException, InterruptedException {
         EmbeddedCacheManager cacheManager = createCacheManager();
-        final Cache<String, String> cache = cacheManager.getCache(cacheName);
-        System.out.printf("Cache %s started on %s, cache members are now %s\n", cacheName, cacheManager.getAddress(),
+        final Cache<String, String> cache = cacheManager.getCache(CACHE_NAME);
+        System.out.printf("Cache %s started on %s, cache members are now %s\n", CACHE_NAME, cacheManager.getAddress(),
                 cache.getAdvancedCache().getRpcManager().getMembers());
         // Add a listener so that we can see the puts to this node
         cache.addListener(new LoggingListener());
@@ -175,26 +180,28 @@ public class Node {
     }
 
     private EmbeddedCacheManager createCacheManager() throws IOException {
-        if (useXmlConfig) {
-            return createCacheManagerFromXml();
-        } else {
-            return createCacheManagerProgrammatically();
-        }
+//        if (useXmlConfig) {
+//            return createCacheManagerFromXml();
+//        } else {
+//            return createCacheManagerProgrammatically();
+//        }
+        return createCacheManagerProgrammatically();
     }
 
     private EmbeddedCacheManager createCacheManagerProgrammatically() {
         System.out.println("Starting a cache manager with a programmatic configuration");
         DefaultCacheManager cacheManager = new DefaultCacheManager(
                 GlobalConfigurationBuilder.defaultClusteredBuilder()
-                        .transport().nodeName(nodeName).addProperty("configurationFile", "jgroups.xml")
+                        .transport().nodeName(UUID.randomUUID().toString()).addProperty("configurationFile", "jgroups.xml")
                         .build(),
-                new ConfigurationBuilder()
-                        .clustering()
-                        .cacheMode(CacheMode.REPL_SYNC)
-                        .build()
+                //new ConfigurationBuilder()
+                //        .clustering()
+                //        .cacheMode(CacheMode.REPL_SYNC)
+                //        .build()
+                true
         );
         // The only way to get the "repl" cache to be exactly the same as the default cache is to not define it at all
-        cacheManager.defineConfiguration("dist", new ConfigurationBuilder()
+        cacheManager.defineConfiguration(CACHE_NAME, new ConfigurationBuilder()
                 .clustering()
                 .cacheMode(CacheMode.DIST_SYNC)
                 .hash().numOwners(2)
@@ -203,9 +210,9 @@ public class Node {
         return cacheManager;
     }
 
-    private EmbeddedCacheManager createCacheManagerFromXml() throws IOException {
-        System.out.println("Starting a cache manager with an XML configuration");
-        System.setProperty("nodeName", nodeName);
-        return new DefaultCacheManager("infinispan.xml");
-    }
+//    private EmbeddedCacheManager createCacheManagerFromXml() throws IOException {
+//        System.out.println("Starting a cache manager with an XML configuration");
+//        System.setProperty("nodeName", nodeName);
+//        return new DefaultCacheManager("infinispan.xml");
+//    }
 }
