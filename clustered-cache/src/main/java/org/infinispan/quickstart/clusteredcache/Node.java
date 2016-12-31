@@ -23,20 +23,21 @@
 package org.infinispan.quickstart.clusteredcache;
 
 import java.io.IOException;
-import java.util.BitSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
-import org.infinispan.AdvancedCache;
+import javax.inject.Inject;
 import org.infinispan.Cache;
-import org.infinispan.CacheStream;
 import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
-import org.infinispan.container.entries.CacheEntry;
-import org.infinispan.context.Flag;
-import org.infinispan.distribution.ch.ConsistentHash;
+import org.infinispan.distexec.DefaultExecutorService;
+import org.infinispan.distexec.DistributedExecutorService;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
-import org.infinispan.quickstart.clusteredcache.util.LoggingListener;
 import org.infinispan.remoting.transport.Address;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
@@ -49,9 +50,9 @@ public class Node {
 //    private final String cacheName;
 //    private final String nodeName;
     private volatile boolean stop = false;
-
     private static final String CACHE_NAME = "dist";
-
+    @Inject
+    private EntryManager entryManager;
 //    public Node(boolean useXmlConfig, String cacheName, String nodeName) {
 //        this.useXmlConfig = useXmlConfig;
 //        this.cacheName = cacheName;
@@ -84,13 +85,14 @@ public class Node {
 //        new Node(useXmlConfig, cache, nodeName).run();
 //    }
 //
+
     public void run() throws IOException, InterruptedException {
         EmbeddedCacheManager cacheManager = createCacheManager();
         final Cache<String, String> cache = cacheManager.getCache(CACHE_NAME);
         System.out.printf("Cache %s started on %s, cache members are now %s\n", CACHE_NAME, cacheManager.getAddress(),
                 cache.getAdvancedCache().getRpcManager().getMembers());
         // Add a listener so that we can see the puts to this node
-        cache.addListener(new LoggingListener());
+        // cache.addListener(new LoggingListener());
         printCacheContents(cache);
         Thread putThread = new Thread() {
             @Override
@@ -105,7 +107,7 @@ public class Node {
                     }
                     counter++;
                     try {
-                        Thread.sleep(3000L);
+                        Thread.sleep(1L);
                     } catch (InterruptedException e) {
                         break;
                     }
@@ -155,27 +157,25 @@ public class Node {
 //                //})
 //                .filter(x -> primarySegments.get(ch.getSegment(x.getKey())))
 //                .forEach(x -> System.out.printf("\t%s = %s\n", x.getKey(), x.getValue()));
-        this.streamOfLocalPrimarySegmentsEntries(cache)
-                .forEach(x -> System.out.printf("\t%s = %s\n", x.getKey(), x.getValue()));
-    }
+        List<String> localEntries = this.entryManager.streamOfLocalPrimarySegmentsEntries(cache)
+                .map(x -> String.format("\t%s = %s\n", x.getKey(), x.getValue()))
+                .collect(Collectors.toList());
+        DistributedExecutorService des = new DefaultExecutorService(cache);
 
-    private <K, V> CacheStream<CacheEntry<K, V>> streamOfLocalPrimarySegmentsEntries(Cache<K, V> cache) {
-        //AdvancedCache<String, String> advancedCache = cache.getAdvancedCache();
-        AdvancedCache<K, V> advancedCache = cache.getAdvancedCache();
-        ConsistentHash ch = advancedCache.getDistributionManager().getReadConsistentHash();
-        Address localhost = advancedCache.getRpcManager().getAddress();
-        BitSet primarySegments = new BitSet(ch.getNumSegments());
-        ch.getPrimarySegmentsForOwner(localhost).stream()
-                //.peek(x -> {
-                //    System.out.printf("\t address=%s primarySegments=%d\n", localhost, x);
-                //})
-                .forEach(primarySegments::set);
-        return advancedCache.withFlags(Flag.CACHE_MODE_LOCAL).cacheEntrySet().stream()
-                //.peek(x -> {
-                //    System.out.printf("\t %s -> %s\n", x.getKey(), primarySegments.get(ch.getSegment(x.getKey())));
-                //})
-                .filter(x -> primarySegments.get(ch.getSegment(x.getKey())));
-        //.forEach(x -> System.out.printf("\t%s = %s\n", x.getKey(), x.getValue()));
+        Task task = new Task();
+        //Task task = CDI.current().select(Task.class).get();
+
+        List<String> allEntries = new ArrayList<>();
+        List<CompletableFuture<List<String>>> futures = des.submitEverywhere(task);
+        try {
+            for (CompletableFuture<List<String>> future : futures) {
+                allEntries.addAll(future.get());
+            }
+        } catch (InterruptedException | ExecutionException cause) {
+            //throw new RuntimeException(cause);
+            cause.printStackTrace();
+        }
+        System.out.printf("Cache entries=[%d/%d]\n", localEntries.size(), allEntries.size());
     }
 
     private EmbeddedCacheManager createCacheManager() throws IOException {
@@ -191,7 +191,11 @@ public class Node {
         System.out.println("Starting a cache manager with a programmatic configuration");
         DefaultCacheManager cacheManager = new DefaultCacheManager(
                 GlobalConfigurationBuilder.defaultClusteredBuilder()
-                        .transport()/*.nodeName(UUID.randomUUID().toString())*/.addProperty("configurationFile", "jgroups.xml")
+                        //.transport()/*.nodeName(UUID.randomUUID().toString())*/.addProperty("configurationFile", "default-configs/default-jgroups-tcp.xml")
+                        // --- transport
+                        .transport()
+                        .addProperty("configurationFile", "default-configs/default-jgroups-tcp.xml")
+                        .initialClusterSize(3)
                         .build(),
                 //new ConfigurationBuilder()
                 //        .clustering()
@@ -208,7 +212,6 @@ public class Node {
         );
         return cacheManager;
     }
-
 //    private EmbeddedCacheManager createCacheManagerFromXml() throws IOException {
 //        System.out.println("Starting a cache manager with an XML configuration");
 //        System.setProperty("nodeName", nodeName);
