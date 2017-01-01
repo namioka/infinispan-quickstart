@@ -1,15 +1,13 @@
 package org.infinispan.quickstart.clusteredcache;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.enterprise.inject.spi.CDI;
 import org.infinispan.Cache;
 import org.infinispan.distexec.DistributedCallable;
 
 //@Dependent
-public class Task implements DistributedCallable<String, String, List<String>>, Serializable {
+public class Task implements DistributedCallable<String, String, Object[]>, Serializable {
 
     private Cache<String, String> cache;
 //
@@ -22,12 +20,19 @@ public class Task implements DistributedCallable<String, String, List<String>>, 
     }
 
     @Override
-    public List<String> call() throws Exception {
+    public Object[] call() throws Exception {
+
         EntryManager entryManager = CDI.current().select(EntryManager.class).get();
         System.out.printf("this=%s, entryManager=%s\n", this.toString(), entryManager.toString());
-        return entryManager.streamOfLocalPrimarySegmentsEntries(this.cache)
-                .map(x -> x.getValue())
-                .collect(Collectors.toList());
+
+        Object[] result = new Object[2];
+        result[0] = this.cache.getCacheManager().getAddress().toString();
+        result[1] = entryManager.streamOfLocalPrimarySegmentsEntries(this.cache).count();
+        return result;
+
+//        return entryManager.streamOfLocalPrimarySegmentsEntries(this.cache)
+//                .map(x -> x.getValue())
+//                .collect(Collectors.toList());
 //        System.out.printf("this=%s, entryManager=%s\n", this.toString(), this.entryManager.toString());
 //        return this.entryManager.streamOfLocalPrimarySegmentsEntries(this.cache)
 //                .map(x -> x.getValue())
