@@ -16,7 +16,10 @@ public class EntryManager {
     public <K, V> CacheStream<CacheEntry<K, V>> streamOfLocalPrimarySegmentsEntries(Cache<K, V> cache) {
         //AdvancedCache<String, String> advancedCache = cache.getAdvancedCache();
         AdvancedCache<K, V> advancedCache = cache.getAdvancedCache();
-        Address localhost = advancedCache.getRpcManager().getAddress();
+       // Address localhost = advancedCache.getRpcManager().getAddress();
+        Address localhost = cache.getCacheManager().getAddress();
+        
+        // TODO ch.getMembers().contains(localAddress);
 
 //        if (cache.getCacheManager().getMembers().contains(localhost)) {
 //            System.out.printf("&&&&& %s is a member.\n", localhost);
