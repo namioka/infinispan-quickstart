@@ -14,18 +14,15 @@ import org.infinispan.remoting.transport.Address;
 public class EntryManager {
 
     public <K, V> CacheStream<CacheEntry<K, V>> streamOfLocalPrimarySegmentsEntries(Cache<K, V> cache) {
-        //AdvancedCache<String, String> advancedCache = cache.getAdvancedCache();
+        
         AdvancedCache<K, V> advancedCache = cache.getAdvancedCache();
+        
+        DistributionManager distributionManager = advancedCache.getDistributionManager();
+        
        // Address localhost = advancedCache.getRpcManager().getAddress();
         Address localhost = cache.getCacheManager().getAddress();
         
         // TODO ch.getMembers().contains(localAddress);
-
-//        if (cache.getCacheManager().getMembers().contains(localhost)) {
-//            System.out.printf("&&&&& %s is a member.\n", localhost);
-//        } else {
-//            System.out.printf("&&&&& %s is not a member.\n", localhost);
-//        }
         try {
 
             ConsistentHash ch = advancedCache.getDistributionManager().getReadConsistentHash();
@@ -40,9 +37,9 @@ public class EntryManager {
                     //    System.out.printf("\t %s -> %s\n", x.getKey(), primarySegments.get(ch.getSegment(x.getKey())));
                     //})
                     .filter(x -> primarySegments.get(ch.getSegment(x.getKey())));
-            //.forEach(x -> System.out.printf("\t%s = %s\n", x.getKey(), x.getValue()));
 
         } catch (IllegalArgumentException cause) {
+            
             // TODO
             if (!cause.getMessage().matches("^Node .+ is not a member$")) {
                 throw cause;
