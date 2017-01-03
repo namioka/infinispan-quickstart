@@ -19,7 +19,6 @@ public class EntryManager {
         
         DistributionManager distributionManager = advancedCache.getDistributionManager();
         
-       // Address localhost = advancedCache.getRpcManager().getAddress();
         Address localhost = cache.getCacheManager().getAddress();
         
         // TODO ch.getMembers().contains(localAddress);
