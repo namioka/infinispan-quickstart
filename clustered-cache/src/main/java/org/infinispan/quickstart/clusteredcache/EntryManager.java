@@ -26,12 +26,14 @@ public class EntryManager {
         try {
 
             ConsistentHash ch = advancedCache.getDistributionManager().getReadConsistentHash();
+            
             BitSet primarySegments = new BitSet(ch.getNumSegments());
             ch.getPrimarySegmentsForOwner(localhost).stream()
                     //.peek(x -> {
                     //    System.out.printf("\t address=%s primarySegments=%d\n", localhost, x);
                     //})
                     .forEach(primarySegments::set);
+            
             return advancedCache.withFlags(Flag.CACHE_MODE_LOCAL).cacheEntrySet().stream()
                     //.peek(x -> {
                     //    System.out.printf("\t %s -> %s\n", x.getKey(), primarySegments.get(ch.getSegment(x.getKey())));
