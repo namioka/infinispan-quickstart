@@ -18,6 +18,8 @@ public class EntryManager {
         AdvancedCache<K, V> advancedCache = cache.getAdvancedCache();
         
         DistributionManager distributionManager = advancedCache.getDistributionManager();
+        // StateTransferManager
+        // CacheToloposy
         
         Address localhost = cache.getCacheManager().getAddress();
         
