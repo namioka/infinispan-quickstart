@@ -35,8 +35,8 @@ import org.jboss.shrinkwrap.resolver.api.maven.MavenDependencyResolver;
  * @author Kevin Pollet <pollet.kevin@gmail.com> (C) 2011
  */
 public final class Deployments {
-    // Disable instantiation
 
+    // Disable instantiation
     private Deployments() {
     }
 

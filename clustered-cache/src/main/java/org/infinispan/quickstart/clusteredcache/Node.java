@@ -23,21 +23,9 @@
 package org.infinispan.quickstart.clusteredcache;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import org.infinispan.Cache;
-import org.infinispan.configuration.cache.CacheMode;
-import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.configuration.global.GlobalConfigurationBuilder;
-import org.infinispan.distexec.DefaultExecutorService;
-import org.infinispan.distexec.DistributedExecutorService;
-import org.infinispan.manager.DefaultCacheManager;
-import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.remoting.transport.Address;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
@@ -47,47 +35,14 @@ public class Node {
 
     private static final BasicLogger log = Logger.getLogger(Node.class);
     private volatile boolean stop = false;
-    private static final String CACHE_NAME = "dist";
-
-    private EmbeddedCacheManager embeddedCacheManager;
-
     @Inject
-    private EntryManager entryManager;
+    private EmbeddedCacheManagerBean embeddedCacheManagerBean;
+    @Inject
+    private AnyService anyService;
 
-    @PostConstruct
-    void postConstruct() {
-        long s;
-        System.out.printf("########## Start create embeddedCacheManager\n");
-        s = System.currentTimeMillis();
-        this.embeddedCacheManager = new DefaultCacheManager(
-                GlobalConfigurationBuilder.defaultClusteredBuilder()
-                        .transport()
-                        .addProperty("configurationFile", "default-configs/default-jgroups-tcp.xml")
-                        //.initialClusterSize(3)
-                        .build(),
-                true
-        );
-        this.embeddedCacheManager.defineConfiguration(CACHE_NAME, new ConfigurationBuilder()
-                .clustering()
-                .cacheMode(CacheMode.DIST_SYNC)
-                .hash().numOwners(2)
-                .build()
-        );
-        System.out.printf("########## End create embeddedCacheManager (%d)\n", (System.currentTimeMillis() - s));
-        System.out.printf("########## Start startCaches\n");
-        s = System.currentTimeMillis();
-        this.embeddedCacheManager.startCaches(CACHE_NAME);
-        System.out.printf("########## End startCaches (%d)\n", (System.currentTimeMillis() - s));
-    }
-
-    public void run() throws IOException, InterruptedException {
-        final Cache<String, String> cache = this.embeddedCacheManager.getCache(CACHE_NAME);
-//        System.out.printf("Cache %s started on %s, cache members are now %s\n",
-//                CACHE_NAME,
-//                this.embeddedCacheManager.getAddress(),
-//                cache.getAdvancedCache().getRpcManager().getMembers());
-        // cache.addListener(new LoggingListener());
-        printCacheContents(cache);
+    public void run() {
+        final Cache<String, String> cache = this.embeddedCacheManagerBean.embeddedCacheManager().getCache("dist"/*TODO ENUM?*/);
+        this.anyService.service(cache);
         Thread putThread = new Thread() {
             @Override
             public void run() {
@@ -110,39 +65,19 @@ public class Node {
         };
         putThread.start();
         System.out.println("########## Press Enter to print the cache contents, Ctrl+D/Ctrl+Z to stop.");
-        while (System.in.read() > 0) {
-            printCacheContents(cache);
+        try {
+            while (System.in.read() > 0) {
+                this.anyService.service(cache);
+            }
+        } catch (IOException cause) {
+            throw new RuntimeException(cause);
         }
         this.stop = true;
-        putThread.join();
-        this.embeddedCacheManager.stop();
-    }
-
-    private void printCacheContents(Cache<String, String> cache) {
-        System.out.printf("########## Cache contents on node %s\n", cache.getAdvancedCache().getRpcManager().getAddress());
-        List<String> localEntries = this.entryManager.streamOfLocalPrimarySegmentsEntries(cache)
-                .map(x -> String.format("\t%s = %s\n", x.getKey(), x.getValue()))
-                .collect(Collectors.toList());
-        DistributedExecutorService des = new DefaultExecutorService(cache);
-
-        Task task = new Task();
-        //Task task = CDI.current().select(Task.class).get();
-
-        StringBuilder builder = new StringBuilder();
-        long totalCount = 0;
-        List<CompletableFuture<Object[]>> futures = des.submitEverywhere(task);
         try {
-            for (CompletableFuture<Object[]> future : futures) {
-                Object[] result = future.get();
-                builder.append(String.format("node=%s, count=%d ", result[0], (long) result[1]));
-                totalCount += (long) result[1];
-            }
-        } catch (InterruptedException | ExecutionException cause) {
-            //throw new RuntimeException(cause);
-            cause.printStackTrace();
-            //System.out.printf("@@@@@ %s, %s\n", cause.getMessage(), cause.getCause().getMessage());
-            // IGNORE.
+            putThread.join();
+        } catch (InterruptedException cause) {
+            throw new RuntimeException(cause);
         }
-        System.out.printf("%d, %s -----> totalCount=%d\n\n\n", localEntries.size(), builder.toString(), totalCount);
+        this.embeddedCacheManagerBean.embeddedCacheManager().stop();
     }
 }
