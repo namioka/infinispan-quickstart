@@ -46,7 +46,7 @@ public class Node {
         Thread putThread = new Thread() {
             @Override
             public void run() {
-                Address address = cache.getAdvancedCache().getRpcManager().getAddress();
+                Address address = cache.getAdvancedCache().getRpcManager().getAddress();//TODO
                 int counter = 0;
                 while (!stop) {
                     try {
