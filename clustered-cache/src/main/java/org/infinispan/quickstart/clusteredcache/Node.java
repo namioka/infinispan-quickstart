@@ -23,17 +23,16 @@
 package org.infinispan.quickstart.clusteredcache;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import org.infinispan.Cache;
+import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.remoting.transport.Address;
-import org.jboss.logging.BasicLogger;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class Node {
 
-    private static final BasicLogger log = Logger.getLogger(Node.class);
     private volatile boolean stop = false;
     @Inject
     private EmbeddedCacheManagerBean embeddedCacheManagerBean;
@@ -41,28 +40,34 @@ public class Node {
     private AnyService anyService;
 
     public void run() {
-        final Cache<String, String> cache = this.embeddedCacheManagerBean.embeddedCacheManager().getCache("dist"/*TODO ENUM?*/);
-        this.anyService.service(cache);
-        Thread putThread = new Thread() {
-            @Override
-            public void run() {
-                Address address = cache.getAdvancedCache().getRpcManager().getAddress();//TODO
-                int counter = 0;
-                while (!stop) {
+        System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        final EmbeddedCacheManager embeddedCacheManager = this.embeddedCacheManagerBean.embeddedCacheManager();
+        System.out.println("BBBBBBBBBBBBBBBBBBBBBBBBBBB");
+        final Cache<String, String> cache = embeddedCacheManager.getCache("dist");
+        System.out.println("CCCCCCCCCCCCCCCCCCCCCCCCCCC");
+        Thread putThread = new Thread(() -> {
+            Address address = embeddedCacheManager.getAddress();
+            int counter = 0;
+            while (!stop) {
+                if (embeddedCacheManager.isCoordinator()) {
+                    System.out.println("I am Coordinator.");
                     try {
                         cache.put(String.format("key-%d", counter), String.format("key-%s-%d", address, counter));
-                    } catch (Exception e) {
-                        log.warnf("Error inserting key into the cache", e);
+                    } catch (Exception cause) {
+                        cause.printStackTrace();
                     }
                     counter++;
-                    try {
-                        Thread.sleep(1L);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
+                } else {
+                    System.out.println("I am not Coordinator.");
+                }
+                try {
+                    //Thread.sleep(1L);
+                    TimeUnit.MILLISECONDS.sleep(500L);
+                } catch (InterruptedException cause) {
+                    break;
                 }
             }
-        };
+        });
         putThread.start();
         System.out.println("########## Press Enter to print the cache contents, Ctrl+D/Ctrl+Z to stop.");
         try {
@@ -78,6 +83,6 @@ public class Node {
         } catch (InterruptedException cause) {
             throw new RuntimeException(cause);
         }
-        this.embeddedCacheManagerBean.embeddedCacheManager().stop();
+        //this.embeddedCacheManagerBean.embeddedCacheManager().stop();
     }
 }

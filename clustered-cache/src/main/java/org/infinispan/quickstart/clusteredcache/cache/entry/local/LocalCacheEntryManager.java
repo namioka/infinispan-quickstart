@@ -1,6 +1,7 @@
 package org.infinispan.quickstart.clusteredcache.cache.entry.local;
 
 import java.util.BitSet;
+import java.util.concurrent.TimeUnit;
 import javax.enterprise.context.ApplicationScoped;
 import org.infinispan.AdvancedCache;
 import org.infinispan.Cache;
@@ -17,29 +18,31 @@ import org.infinispan.topology.RebalancingStatus;
 @ApplicationScoped
 public class LocalCacheEntryManager {
 
-    public <K, V> CacheStream<CacheEntry<K, V>> streamOfLocalPrimarySegmentsEntries(Cache<K, V> cache) {
+    public <K, V> CacheStream<CacheEntry<K, V>> primarySegmentsEntries(Cache<K, V> cache) {
         AdvancedCache<K, V> advancedCache = cache.getAdvancedCache();
         ComponentRegistry componentRegistry = advancedCache.getComponentRegistry();
         StateTransferManager stateTransferManager = componentRegistry.getStateTransferManager();
         CacheTopology cacheTopology = stateTransferManager.getCacheTopology();
         Address localAddress = cache.getCacheManager().getAddress();
         try {
+            // TODO
             String rebalancingStatus = null;
             while (!RebalancingStatus.COMPLETE.toString().equals((rebalancingStatus = stateTransferManager.getRebalancingStatus()))) {
                 System.out.printf("rebalancingStatus=%s", rebalancingStatus);
-                Thread.sleep(1000L);
+                //Thread.sleep(1000L);
+                TimeUnit.MILLISECONDS.sleep(500L);
             }
         } catch (Exception cause) {
             throw new RuntimeException(cause);
         }
         ConsistentHash ch = cacheTopology.getReadConsistentHash();
-        while (!ch.getMembers().contains(localAddress)) {
-            try {
-                Thread.sleep(1000L);
-            } catch (InterruptedException cause) {
-                throw new RuntimeException(cause);
-            }
-        }
+//        while (!ch.getMembers().contains(localAddress)) {
+//            try {
+//                Thread.sleep(1000L);
+//            } catch (InterruptedException cause) {
+//                throw new RuntimeException(cause);
+//            }
+//        }
         BitSet primarySegments = new BitSet(ch.getNumSegments());
         ch.getPrimarySegmentsForOwner(localAddress).stream()
                 //.peek(x -> {
